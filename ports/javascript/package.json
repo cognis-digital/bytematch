@@ -1,0 +1,10 @@
+{
+  "name": "@cognis/bytematch",
+  "version": "0.2.0",
+  "description": "JavaScript port of bytematch (Cognis Neural Suite)",
+  "bin": {
+    "bytematch": "index.js"
+  },
+  "license": "LicenseRef-COCL-1.0",
+  "type": "module"
+}
