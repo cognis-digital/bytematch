@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: bytematch, labels: { app: bytematch } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: bytematch } }
+  template:
+    metadata: { labels: { app: bytematch } }
+    spec:
+      containers:
+        - name: bytematch
+          image: ghcr.io/cognis-digital/bytematch:latest
+          ports: [{ containerPort: 8000 }]
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: bytematch }
+spec:
+  selector: { app: bytematch }
+  ports: [{ port: 80, targetPort: 8000 }]
