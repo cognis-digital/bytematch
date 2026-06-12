@@ -16,7 +16,7 @@
 </div>
 
 ```bash
-pip install cognis-bytematch
+pip install "git+https://github.com/cognis-digital/bytematch.git"
 bytematch scan .            # → prioritized findings in seconds
 ```
 
@@ -53,7 +53,7 @@ Decentralized 'is this contract actually what its repo claims' check that runs i
 ## Quick start
 
 ```bash
-pip install cognis-bytematch
+pip install "git+https://github.com/cognis-digital/bytematch.git"
 bytematch --version
 bytematch scan .                       # scan current project
 bytematch scan . --format json         # machine-readable
