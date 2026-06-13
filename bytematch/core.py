@@ -257,9 +257,13 @@ def extract_metadata(code: bytes) -> MetadataInfo:
 # only where the two codes diverge, to support Sourcify-style PARTIAL matches.
 
 def _normalize_immutables(a: bytes, b: bytes) -> Tuple[bytes, bytes, int]:
-    """Zero out positions that differ, but ONLY inside the trailing region of
-    the code where Solidity packs immutables/library addresses, to test whether
-    the two codes are otherwise identical. Returns (na, nb, normalized_bytes).
+    """Zero out positions that look like immutable/library address slots.
+
+    A slot is recognized when one side already contains all-zero bytes (the
+    unlinked artifact placeholder) and the other contains real data (the
+    deployed contract with a linked address). Only 20-byte (address) or 32-byte
+    (bytes32/immutable) runs where the *artifact* side (b) is all-zero qualify.
+    This avoids false PARTIAL_MATCH when code has been genuinely tampered.
 
     We require both codes to be the same length to even attempt this; differing
     lengths after metadata strip is a structural mismatch.
@@ -273,14 +277,26 @@ def _normalize_immutables(a: bytes, b: bytes) -> Tuple[bytes, bytes, int]:
     n = len(a)
     while i < n:
         if na[i] != nb[i]:
-            # Treat a 32-byte aligned-ish word as an immutable/library slot.
-            # Mask the differing word (up to 32 bytes) in both.
-            end = min(i + 32, n)
-            for k in range(i, end):
-                na[k] = 0
-                nb[k] = 0
-                normalized += 1
-            i = end
+            # Check whether this looks like a library/immutable slot: the
+            # artifact side (nb) must be all-zero for a standard slot length
+            # (20 bytes for an address, 32 bytes for a bytes32 immutable).
+            slot_found = False
+            for slot_size in (32, 20):
+                end = i + slot_size
+                if end > n:
+                    continue
+                # The artifact's region must be entirely zero.
+                if all(nb[k] == 0 for k in range(i, end)):
+                    for k in range(i, end):
+                        na[k] = 0
+                        nb[k] = 0
+                        normalized += 1
+                    i = end
+                    slot_found = True
+                    break
+            if not slot_found:
+                # Not a recognized placeholder pattern — do not normalize.
+                i += 1
         else:
             i += 1
     return bytes(na), bytes(nb), normalized
