@@ -80,13 +80,8 @@ $ bytematch scan .
 
 ```mermaid
 flowchart LR
-  A[Input: file / dir / API] --> B[Collectors]
-  B --> C[Rules / Analyzers]
-  C --> D[Scorer]
-  D --> E{Reporters}
-  E --> F[Table]
-  E --> G[JSON / SARIF]
-  E --> H[MCP tool -. drives .-> AI agents]
+  IN[binary / sample] --> P[bytematch<br/>scan + match]
+  P --> OUT[detections]
 ```
 
 <div align="right"><a href="#top">↑ back to top</a></div>
