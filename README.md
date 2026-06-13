@@ -20,6 +20,12 @@ pip install "git+https://github.com/cognis-digital/bytematch.git"
 bytematch scan .            # → prioritized findings in seconds
 ```
 
+<!-- cognis:layman:start -->
+## What is this?
+
+When a smart contract is deployed to the Ethereum blockchain, you want to be sure the code running on-chain is exactly what the developers published and compiled — not a secretly altered version. bytematch compares the live deployed contract bytecode against your local build artifact and tells you whether they match, and if not, exactly where they differ. It handles the common quirk where Solidity compilers append a metadata hash to the end of bytecode, so two perfectly equivalent contracts built at different times still pass. Developers, security auditors, and CI pipelines use it to catch supply-chain tampering and verify deployments before going live.
+<!-- cognis:layman:end -->
+
 ## Contents
 
 - [Why bytematch?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
@@ -50,6 +56,42 @@ Decentralized 'is this contract actually what its repo claims' check that runs i
 <div align="right"><a href="#top">↑ back to top</a></div>
 
 <a name="quick-start"></a>
+<!-- cognis:install:start -->
+## Install
+
+`bytematch` is source-available (not published to PyPI) — every method below installs
+straight from GitHub. Pick whichever you prefer; the one-line scripts auto-detect
+the best tool available on your machine.
+
+**One-liner (Linux / macOS):**
+```sh
+curl -fsSL https://raw.githubusercontent.com/cognis-digital/bytematch/HEAD/install.sh | sh
+```
+
+**One-liner (Windows PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/cognis-digital/bytematch/HEAD/install.ps1 | iex
+```
+
+**Or install manually — any one of:**
+```sh
+pipx install "git+https://github.com/cognis-digital/bytematch.git"     # isolated (recommended)
+uv tool install "git+https://github.com/cognis-digital/bytematch.git"  # uv
+pip install "git+https://github.com/cognis-digital/bytematch.git"      # pip
+```
+
+**From source:**
+```sh
+git clone https://github.com/cognis-digital/bytematch.git
+cd bytematch && pip install .
+```
+
+Then run:
+```sh
+bytematch --help
+```
+<!-- cognis:install:end -->
+
 ## Quick start
 
 ```bash
