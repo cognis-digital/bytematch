@@ -20,6 +20,36 @@ pip install cognis-bytematch
 bytematch scan .            # → prioritized findings in seconds
 ```
 
+## Usage — step by step
+
+`bytematch` verifies that deployed EVM runtime bytecode matches a build artifact.
+
+1. **Install** (from a clone or release):
+   ```bash
+   pip install -e .
+   ```
+2. **Verify** deployed bytecode against a compiler artifact (Hardhat/Foundry JSON, raw hex, a file, or `-` for stdin):
+   ```bash
+   bytematch verify --deployed 0x6080... --artifact build/MyContract.json
+   ```
+   Or compare two raw hex blobs directly:
+   ```bash
+   bytematch verify --deployed deployed.hex --artifact-hex artifact.hex
+   ```
+3. **Tighten the comparison** with `--strict` to fail on any difference (including metadata/immutables):
+   ```bash
+   bytematch verify --deployed 0x6080... --artifact build/MyContract.json --strict
+   ```
+4. **Read the result** as machine-readable JSON for tooling:
+   ```bash
+   bytematch --format json verify --deployed 0x6080... --artifact build/MyContract.json
+   ```
+   The command exits non-zero on a mismatch, so the exit code alone gates a pipeline.
+5. **Automate in CI** (e.g. post-deploy supply-chain check):
+   ```yaml
+   - run: bytematch verify --deployed "$DEPLOYED_HEX" --artifact build/MyContract.json --strict
+   ```
+
 ## Contents
 
 - [Why bytematch?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
