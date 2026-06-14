@@ -192,3 +192,96 @@ def test_cli_strict_fails_on_runtime_match(capsys):
 def test_version_constants():
     assert TOOL_NAME == "bytematch"
     assert isinstance(TOOL_VERSION, str) and TOOL_VERSION
+
+
+# ---------------------------------------------------------------------------
+# Hardening tests: error paths, edge cases, and input validation
+# ---------------------------------------------------------------------------
+
+def test_verify_rejects_non_string_deployed():
+    """verify() with a non-string/non-bytes deployed raises ValueError."""
+    import pytest
+    with pytest.raises(ValueError, match="deployed must be"):
+        verify(12345, "0x6080")
+
+
+def test_verify_rejects_non_string_artifact():
+    import pytest
+    with pytest.raises(ValueError, match="artifact must be"):
+        verify("0x6080", None)
+
+
+def test_loader_rejects_empty_json():
+    """load_artifact_runtime_bytecode raises ValueError on empty input."""
+    import pytest
+    with pytest.raises(ValueError, match="empty"):
+        load_artifact_runtime_bytecode("")
+
+
+def test_loader_rejects_invalid_json():
+    """load_artifact_runtime_bytecode raises ValueError (not JSONDecodeError) on bad JSON."""
+    import pytest
+    with pytest.raises(ValueError, match="not valid JSON"):
+        load_artifact_runtime_bytecode("{not json}")
+
+
+def test_cli_missing_artifact_flag_returns_2(capsys):
+    """CLI returns exit 2 when neither --artifact nor --artifact-hex given."""
+    rc = main(["verify", "--deployed", "0x6080"])
+    assert rc == 2
+    _, err = capsys.readouterr()
+    assert "required" in err.lower() or "artifact" in err.lower()
+
+
+def test_cli_both_artifact_flags_returns_2(capsys):
+    """CLI returns exit 2 when both --artifact and --artifact-hex are given."""
+    rt = _runtime_hex()
+    rc = main(["verify", "--deployed", rt, "--artifact", DEMO, "--artifact-hex", rt])
+    assert rc == 2
+    _, err = capsys.readouterr()
+    assert "not both" in err or "artifact" in err.lower()
+
+
+def test_cli_nonexistent_artifact_file_returns_2(capsys):
+    """CLI returns exit 2 when the artifact file does not exist."""
+    rt = _runtime_hex()
+    rc = main(["verify", "--deployed", rt, "--artifact", "/nonexistent/path/Token.json"])
+    assert rc == 2
+    _, err = capsys.readouterr()
+    assert "error" in err.lower() or "artifact" in err.lower()
+
+
+def test_cli_malformed_artifact_json_returns_2(capsys, tmp_path):
+    """CLI returns exit 2 when the artifact file contains malformed JSON."""
+    bad_json = tmp_path / "bad.json"
+    bad_json.write_text("{not valid json}", encoding="utf-8")
+    rt = _runtime_hex()
+    rc = main(["verify", "--deployed", rt, "--artifact", str(bad_json)])
+    assert rc == 2
+    _, err = capsys.readouterr()
+    assert "error" in err.lower()
+
+
+def test_cli_binary_artifact_file_returns_2(capsys, tmp_path):
+    """CLI returns exit 2 when the artifact file is binary (not text)."""
+    binary_file = tmp_path / "binary.json"
+    binary_file.write_bytes(bytes(range(256)))
+    rt = _runtime_hex()
+    rc = main(["verify", "--deployed", rt, "--artifact", str(binary_file)])
+    assert rc == 2
+    _, err = capsys.readouterr()
+    assert "error" in err.lower()
+
+
+def test_both_empty_bytecode_is_mismatch():
+    """Two empty bytecode inputs should yield MISMATCH (nothing to verify)."""
+    res = verify("0x", "0x")
+    assert res.verdict == Verdict.MISMATCH
+    assert res.matched is False
+
+
+def test_verify_accepts_bytes_input():
+    """verify() accepts raw bytes in addition to hex strings."""
+    rt_bytes = normalize_bytecode(_runtime_hex())
+    res = verify(rt_bytes, rt_bytes)
+    assert res.verdict == Verdict.EXACT_MATCH

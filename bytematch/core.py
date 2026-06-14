@@ -270,6 +270,9 @@ def _normalize_immutables(a: bytes, b: bytes) -> Tuple[bytes, bytes, int]:
     """
     if len(a) != len(b):
         return a, b, 0
+    # Skip normalization for pathologically large bytecode (> 24 KB).
+    if len(a) > 24_576:
+        return a, b, 0
     na = bytearray(a)
     nb = bytearray(b)
     normalized = 0
@@ -326,6 +329,18 @@ def verify(deployed: str, artifact: str) -> MatchResult:
     Both inputs are hex strings (0x-prefixed or bare). Returns a MatchResult
     with a Sourcify-style verdict.
     """
+    if not isinstance(deployed, (str, bytes)):
+        raise ValueError(
+            f"deployed must be a hex string or bytes, got {type(deployed).__name__}"
+        )
+    if not isinstance(artifact, (str, bytes)):
+        raise ValueError(
+            f"artifact must be a hex string or bytes, got {type(artifact).__name__}"
+        )
+    if isinstance(deployed, bytes):
+        deployed = "0x" + deployed.hex()
+    if isinstance(artifact, bytes):
+        artifact = "0x" + artifact.hex()
     dep = normalize_bytecode(deployed)
     art = normalize_bytecode(artifact)
 
@@ -415,7 +430,16 @@ def load_artifact_runtime_bytecode(text: str) -> str:
     Falls back to creation \"bytecode\" only if no runtime form exists.
     Raises ValueError if nothing usable is found.
     """
-    data = json.loads(text)
+    if not isinstance(text, str):
+        raise ValueError(
+            f"artifact JSON must be a string, got {type(text).__name__}"
+        )
+    if not text.strip():
+        raise ValueError("artifact JSON is empty")
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"artifact JSON is not valid JSON: {exc}") from exc
 
     def _obj(v: Any) -> Optional[str]:
         if isinstance(v, str):

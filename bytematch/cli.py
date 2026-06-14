@@ -34,17 +34,43 @@ from .core import (
 )
 
 
+# Maximum number of bytes read from a file or stdin (4 MB - contract
+# bytecode is never this large; guards against accidental huge file reads).
+_MAX_INPUT_BYTES = 4 * 1024 * 1024
+
+
 def _read_source(value: str) -> str:
     """Resolve an input that may be a literal hex string, a file path, or '-'.
 
     Heuristic: if it looks like hex (optionally 0x) and is not an existing
     path, treat it as a literal. '-' means stdin.
+
+    Raises OSError on read failure, ValueError if the file is binary or
+    exceeds the 4 MB sanity limit.
     """
     if value == "-":
-        return sys.stdin.read()
+        raw = sys.stdin.buffer.read(_MAX_INPUT_BYTES + 1)
+        if len(raw) > _MAX_INPUT_BYTES:
+            raise ValueError(f"stdin input exceeds {_MAX_INPUT_BYTES} byte limit")
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(f"stdin contains non-UTF-8 / binary data: {exc}") from exc
     if os.path.isfile(value):
-        with open(value, "r", encoding="utf-8") as fh:
-            return fh.read()
+        size = os.path.getsize(value)
+        if size > _MAX_INPUT_BYTES:
+            raise ValueError(
+                f"file {value!r} is {size} bytes (limit {_MAX_INPUT_BYTES}); "
+                "is this the right file?"
+            )
+        with open(value, "rb") as fh:
+            raw = fh.read()
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(
+                f"file {value!r} appears to be binary (not a hex or JSON file): {exc}"
+            ) from exc
     return value
 
 
@@ -91,7 +117,7 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     # Resolve deployed bytecode.
     try:
         deployed_text = _read_source(args.deployed)
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         print(f"error: reading --deployed: {exc}", file=sys.stderr)
         return 2
 
@@ -115,7 +141,7 @@ def _cmd_verify(args: argparse.Namespace) -> int:
         print(f"error: reading artifact: {exc}", file=sys.stderr)
         return 2
     except (ValueError, json.JSONDecodeError) as exc:
-        print(f"error: parsing artifact: {exc}", file=sys.stderr)
+        print(f"error: artifact: {exc}", file=sys.stderr)
         return 2
 
     try:
@@ -181,7 +207,14 @@ def main(argv: Optional[list] = None) -> int:
     if not getattr(args, "command", None):
         parser.print_help()
         return 2
-    return args.func(args)
+    try:
+        return args.func(args)
+    except KeyboardInterrupt:
+        print("interrupted", file=sys.stderr)
+        return 2
+    except Exception as exc:  # pragma: no cover - unexpected path
+        print(f"internal error: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
-"""BYTEMATCH MCP server — exposes scan() as an MCP tool for Cognis.Studio."""
+"""BYTEMATCH MCP server — exposes verify() as an MCP tool for Cognis.Studio."""
 from __future__ import annotations
-from bytematch.core import scan, to_json
+
+import json as _json
+
 
 def serve() -> int:
     """Start an MCP stdio server. Requires the optional 'mcp' extra:
@@ -8,15 +10,27 @@ def serve() -> int:
     """
     try:
         from mcp.server.fastmcp import FastMCP
-    except Exception:
+    except ImportError:
         print("Install the MCP extra: pip install 'cognis-bytematch[mcp]'")
         return 1
+
+    from bytematch.core import verify, load_artifact_runtime_bytecode
+
     app = FastMCP("bytematch")
 
     @app.tool()
-    def bytematch_scan(target: str) -> str:
-        """Verifies that deployed on-chain bytecode matches a given source/Foundry build, detecting unverified or tampered proxies and implementations.. Returns JSON findings."""
-        return to_json(scan(target))
+    def bytematch_verify(deployed: str, artifact_json: str) -> str:
+        """Verify deployed on-chain bytecode against a build artifact JSON.
+
+        Returns JSON with a Sourcify-style verdict (exact_match / runtime_match
+        / partial_match / mismatch).
+        """
+        try:
+            art_hex = load_artifact_runtime_bytecode(artifact_json)
+            result = verify(deployed, art_hex)
+            return _json.dumps(result.to_dict())
+        except (ValueError, _json.JSONDecodeError) as exc:
+            return _json.dumps({"error": str(exc)})
 
     app.run()
     return 0
