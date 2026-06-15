@@ -169,6 +169,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="expected runtime bytecode as raw hex (file/literal/-)")
     v.add_argument("--strict", action="store_true",
                    help="require an exact_match (fail on partial/runtime match)")
+    v.add_argument("--format", choices=["table", "json"], default=argparse.SUPPRESS,
+                   help="output format (default: table); also accepted after the verb")
     v.set_defaults(func=_cmd_verify)
     return parser
 

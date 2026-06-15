@@ -271,8 +271,15 @@ def _normalize_immutables(a: bytes, b: bytes) -> Tuple[bytes, bytes, int]:
     normalized = 0
     i = 0
     n = len(a)
+    # Immutables/library address slots are packed in the back of the code. A
+    # difference in the executable region (front) is real tampering and must NOT
+    # be masked, else a flipped opcode would be reported as a PARTIAL match.
+    trailing_start = n // 2
     while i < n:
         if na[i] != nb[i]:
+            if i < trailing_start:
+                i += 1          # executable-region divergence -> leave it (MISMATCH)
+                continue
             # Treat a 32-byte aligned-ish word as an immutable/library slot.
             # Mask the differing word (up to 32 bytes) in both.
             end = min(i + 32, n)
