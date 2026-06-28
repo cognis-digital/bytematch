@@ -1,0 +1,3 @@
+$ bytematch-emit --version
+
+bytematch 0.1.0

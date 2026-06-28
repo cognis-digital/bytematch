@@ -20,6 +20,79 @@ pip install cognis-bytematch
 bytematch scan .            # → prioritized findings in seconds
 ```
 
+
+<!-- cognis:example:start -->
+## 🔎 Example output
+
+Real, reproducible output from the tool — runs offline:
+
+```console
+$ bytematch-emit --version
+bytematch 0.1.0
+```
+
+```console
+$ bytematch-emit --help
+usage: bytematch [-h] [--version] [--format {table,json}] {verify} ...
+
+Verify deployed EVM bytecode matches a build artifact (detects tampering). Metadata-aware, Sourcify-style.
+
+positional arguments:
+  {verify}
+    verify              compare deployed bytecode against an artifact
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --format {table,json}
+                        output format (default: table)
+
+BYTEMATCH command-line interface.
+
+Verifies that deployed EVM bytecode matches a build artifact, detecting
+tampering. Metadata-aware (Sourcify-style exact / partial verdicts).
+
+Examples
+--------
+  # Compare deployed bytecode against a Solidity build artifact JSON
+  bytematch verify --deployed 0x6080... --artifact build/Token.json
+
+  # Compare two raw hex blobs (files or literals), JSON output for CI
+  bytematch verify --deployed deployed.hex --artifact-hex expected.hex --format json
+
+  # Read deployed code from stdin
+  cast code 0xADDR | bytematch verify --deployed - --artifact build/Token.json
+
+Exit codes: 0 = match (exact/runtime/partial), 1 = MISMATCH (tampering), 2 = usage/IO error.
+```
+
+> Blocks above are real `bytematch` output — reproduce them from a clone.
+
+**Sample result format** _(illustrative values — run on your own data for real findings):_
+
+```
+{
+"results": [
+{
+"id": "123456",
+"name": "Suspicious DNS Query",
+"description": "A suspicious DNS query was detected from IP 192.0.2.1",
+"severity": "high",
+"created_at": "2023-02-15T14:30:00Z"
+},
+{
+"id": "789012",
+"name": "Unusual File Access",
+"description": "An unusual file access attempt was made to /path/to/file.txt from IP 192.0.2.2",
+"severity": "medium",
+"created_at": "2023-02-15T14:35:00Z"
+}
+]
+}
+```
+
+<!-- cognis:example:end -->
+
 ## Usage — step by step
 
 `bytematch` verifies that deployed EVM runtime bytecode matches a build artifact.

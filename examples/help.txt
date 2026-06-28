@@ -1,0 +1,33 @@
+$ bytematch-emit --help
+
+usage: bytematch [-h] [--version] [--format {table,json}] {verify} ...
+
+Verify deployed EVM bytecode matches a build artifact (detects tampering). Metadata-aware, Sourcify-style.
+
+positional arguments:
+  {verify}
+    verify              compare deployed bytecode against an artifact
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --format {table,json}
+                        output format (default: table)
+
+BYTEMATCH command-line interface.
+
+Verifies that deployed EVM bytecode matches a build artifact, detecting
+tampering. Metadata-aware (Sourcify-style exact / partial verdicts).
+
+Examples
+--------
+  # Compare deployed bytecode against a Solidity build artifact JSON
+  bytematch verify --deployed 0x6080... --artifact build/Token.json
+
+  # Compare two raw hex blobs (files or literals), JSON output for CI
+  bytematch verify --deployed deployed.hex --artifact-hex expected.hex --format json
+
+  # Read deployed code from stdin
+  cast code 0xADDR | bytematch verify --deployed - --artifact build/Token.json
+
+Exit codes: 0 = match (exact/runtime/partial), 1 = MISMATCH (tampering), 2 = usage/IO error.
